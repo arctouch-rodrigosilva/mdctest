@@ -1,0 +1,48 @@
+---
+description: Autonomous PR workflow (Jules Mode) — stack-agnostic branching, tests, visual checks, and delivery.
+globs: *
+---
+# Autonomous PR Workflow (Jules Mode)
+
+When instructed to execute a task, manage the full Git lifecycle in this workspace. Do not assume a package manager, framework, language, test runner, or dev server.
+
+## Phase 1: Planning
+1. Read the repo. Detect the stack from what is already there (manifests, lockfiles, scripts, source). If nothing is there, treat it as greenfield.
+2. Draft a plan in `scratchpad.md`. It must include:
+   - Branch name (`feature/[issue-name]`)
+   - Implementation approach
+   - **Stack decision** — existing stack vs anything new. Question new tooling. Prefer the simplest fit for the request (static HTML/CSS/JS over a bundler when a page is enough). Do not add a package manager, framework, or test runner just so later phases have a command to run.
+   - How behavior will be tested
+   - How a UI will be opened for a screenshot, if the change is visual
+3. Wait for explicit approval of the plan **including the stack**. Do not implement first.
+
+## Phase 2: Branching
+Create and checkout `feature/[issue-name]`.
+
+## Phase 3: Execution & tests
+1. Implement only what the approved plan specified.
+2. Run install/test commands the project already has, in that project's native form. If it has none, do not invent a toolchain (including npm) to create them.
+3. Add tests that match the chosen stack and the behavior that changed. A static page may have no unit runner; then visual verification is the test. Iterate until those checks pass.
+
+## Phase 4: Visual verification (UI only)
+Skip if there is no user-facing change.
+1. Open the UI the way this stack is meant to be viewed (open the static file, or use an existing serve command). Do not add a bundler or `dev` script only to take a screenshot.
+2. If an E2E suite already exists, run it.
+3. Otherwise capture `pr-preview.png` at the workspace root with a temporary headless-browser script. Do not add that tool as a project dependency.
+4. Stop any server you started.
+
+## Phase 5: Review
+1. Diff against the repo's default base branch (`git diff main` unless the default is something else).
+2. Run the project's linter, typecheck, or formatter only if they already exist.
+3. Self-review as a strict Senior Reviewer (correctness, safety, scope, edge cases).
+4. Fix issues and repeat Phases 3–4 until the review passes.
+
+## Phase 6: Delivery
+1. Stage the files that belong to this task (not unrelated workflow or local artifacts). Commit: `feat: [brief description]`.
+2. Push `feature/[issue-name]` and create the PR with `gh pr create`. If a screenshot was taken, say that `pr-preview.png` is in the branch.
+3. Delete `scratchpad.md` and any temporary capture scripts. Keep `pr-preview.png`.
+
+## Do not
+- Assume npm, Vite, Playwright, or any other stack.
+- Add tooling so this workflow has `npm test` / `npm run dev` / `npm run lint` to run.
+- Skip planning approval, tests that fit the stack, or visual proof for UI changes.
