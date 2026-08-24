@@ -1,0 +1,7 @@
+node_modules/
+
+# Jules Mode local artifacts — not part of the delivered change
+scratchpad.md
+pr-preview*.png
+test-results/
+playwright-report/
