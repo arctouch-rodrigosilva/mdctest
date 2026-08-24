@@ -1,58 +1,48 @@
 ---
-description: Ephemeral Docker Workflow (Jules Mode) with branching, headless E2E visual checks, and automated code review.
+description: Autonomous PR workflow (Jules Mode) — stack-agnostic branching, tests, visual checks, and delivery.
 globs: *
 ---
-# Ephemeral Docker Workflow (Jules Mode)
+# Autonomous PR Workflow (Jules Mode)
 
-When instructed to "Run Jules Mode" for a task, strictly follow this execution lifecycle. Do not execute any build, test, or git commands on the host machine.
+When instructed to execute a task, manage the full Git lifecycle in this workspace. Do not assume a package manager, framework, language, test runner, or dev server.
 
 ## Phase 1: Planning
-1. Analyze the issue and read the necessary codebase context.
-2. Draft a step-by-step implementation plan in a temporary `scratchpad.md` file.
-3. Wait for the user to explicitly approve the plan.
+1. Read the repo. Detect the stack from what is already there (manifests, lockfiles, scripts, source). If nothing is there, treat it as greenfield.
+2. Draft a plan in `scratchpad.md`. It must include:
+   - Branch name (`feature/[issue-name]`)
+   - Implementation approach
+   - **Stack decision** — existing stack vs anything new. Question new tooling. Prefer the simplest fit for the request (static HTML/CSS/JS over a bundler when a page is enough). Do not add a package manager, framework, or test runner just so later phases have a command to run.
+   - How behavior will be tested
+   - How a UI will be opened for a screenshot, if the change is visual
+3. Wait for explicit approval of the plan **including the stack**. Do not implement first.
 
-## Phase 2: Container Provisioning & Branching
-1. Start an ephemeral background Docker container mounting the current workspace:
-   `docker run -d --name cursor-agent-sandbox -v $(pwd):/workspace -w /workspace -e GITHUB_TOKEN=$GITHUB_TOKEN mcr.microsoft.com/devcontainers/universal:latest tail -f /dev/null`
-2. Install headless browser system dependencies (graphics, fonts, and audio libraries required by Chromium/Webkit):
-   `docker exec -u root cursor-agent-sandbox apt-get update`
-   `docker exec -u root cursor-agent-sandbox apt-get install -y libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2`
-3. Create and checkout a new branch entirely inside the container:
-   `docker exec cursor-agent-sandbox git checkout -b feature/[issue-name]`
+## Phase 2: Branching
+Create and checkout `feature/[issue-name]`.
 
-## Phase 3: Execution & Unit Testing
-1. Implement the planned code changes. (File edits automatically sync via the volume mount).
-2. Run all package installations and unit test suites strictly inside the container:
-   `docker exec cursor-agent-sandbox npm install`
-   `docker exec cursor-agent-sandbox npm test`
-3. Iterate on the code until all unit tests pass.
+## Phase 3: Execution & tests
+1. Implement only what the approved plan specified.
+2. Run install/test commands the project already has, in that project's native form. If it has none, do not invent a toolchain (including npm) to create them.
+3. Add tests that match the chosen stack and the behavior that changed. A static page may have no unit runner; then visual verification is the test. Iterate until those checks pass.
 
-## Phase 4: E2E Testing & Visual Verification
-1. Determine if the implemented changes affect the User Interface. If strictly backend, skip to Phase 5.
-2. Start the local development server in the background inside the container (e.g., `docker exec -d cursor-agent-sandbox npm run dev`).
-3. Run the project's E2E test suite (e.g., Playwright, Cypress) via `docker exec`. 
-   *(Note: If using Playwright, you may also need to run `docker exec cursor-agent-sandbox npx playwright install chromium` first).*
-4. If no E2E suite exists, write a temporary headless browser script (e.g., Puppeteer) to navigate to the modified UI, capture a screenshot named `pr-preview.png`, and save it to the workspace root.
-5. Kill the development server process after verification.
+## Phase 4: Visual verification (UI only)
+Skip if there is no user-facing change.
+1. Open the UI the way this stack is meant to be viewed (open the static file, or use an existing serve command). Do not add a bundler or `dev` script only to take a screenshot.
+2. If an E2E suite already exists, run it.
+3. Otherwise capture `pr-preview.png` at the workspace root with a temporary headless-browser script. Do not add that tool as a project dependency.
+4. Stop any server you started.
 
-## Phase 5: Automated Code Review
-1. Generate a diff of your changes against the main branch:
-   `docker exec cursor-agent-sandbox git diff main`
-2. Run project linters or static analysis tools (e.g., `npm run lint`).
-3. **Self-Reflection:** Assume the persona of a strict Senior Reviewer. Analyze the diff for edge cases, performance bottlenecks, security risks, or hardcoded values.
-4. If you find issues, fix the code and repeat Phases 3 and 4. Proceed only when the code passes your own strict review.
+## Phase 5: Review
+1. Diff against the repo's default base branch (`git diff main` unless the default is something else).
+2. Run the project's linter, typecheck, or formatter only if they already exist.
+3. Self-review as a strict Senior Reviewer (correctness, safety, scope, edge cases).
+4. Fix issues and repeat Phases 3–4 until the review passes.
 
 ## Phase 6: Delivery
-1. Stage and commit the changes inside the container:
-   `docker exec cursor-agent-sandbox git add .`
-   `docker exec cursor-agent-sandbox git commit -m "feat: [brief description]"`
-2. Push the branch to the remote repository:
-   `docker exec cursor-agent-sandbox git push -u origin feature/[issue-name]`
-3. Create the PR using the GitHub CLI. If a screenshot was generated, explicitly mention in the body that `pr-preview.png` is available locally for the reviewer:
-   `docker exec cursor-agent-sandbox gh pr create --title "[PR Title]" --body "[PR Summary including notes from your self-review]"`
+1. Stage the files that belong to this task (not unrelated workflow or local artifacts). Commit: `feat: [brief description]`.
+2. Push `feature/[issue-name]` and create the PR with `gh pr create`. If a screenshot was taken, say that `pr-preview.png` is in the branch.
+3. Delete `scratchpad.md` and any temporary capture scripts. Keep `pr-preview.png`.
 
-## Phase 7: Teardown
-1. Destroy the ephemeral container:
-   `docker rm -f cursor-agent-sandbox`
-2. Delete `scratchpad.md` and any temporary test scripts. (Do not delete `pr-preview.png`).
-3. Report success and provide the PR link.
+## Do not
+- Assume npm, Vite, Playwright, or any other stack.
+- Add tooling so this workflow has `npm test` / `npm run dev` / `npm run lint` to run.
+- Skip planning approval, tests that fit the stack, or visual proof for UI changes.
