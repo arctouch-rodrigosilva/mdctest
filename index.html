@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Hello, World — a first signal. A cinematic greeting across the dark."
+    />
+    <title>Hello, World — First Signal</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Syne:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <canvas id="field" aria-hidden="true"></canvas>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <div class="hud" aria-hidden="true">
+      <span class="hud__corner hud__corner--tl"></span>
+      <span class="hud__corner hud__corner--tr"></span>
+      <span class="hud__corner hud__corner--bl"></span>
+      <span class="hud__corner hud__corner--br"></span>
+    </div>
+
+    <header class="meta">
+      <p class="meta__mark">
+        <span class="meta__index">001</span>
+        <span data-greeting>Hello, World</span>
+      </p>
+      <p class="meta__clock">
+        <span class="meta__label">Local</span>
+        <time id="clock" datetime="">--:--:--</time>
+      </p>
+    </header>
+
+    <main class="stage" id="stage">
+      <p class="eyebrow">First signal</p>
+      <h1 class="hello">
+        <span class="visually-hidden">Hello</span>
+        <span aria-hidden="true">Hell<span class="hello__o"><span class="hello__core"></span></span></span>
+      </h1>
+      <p class="world">World</p>
+      <div class="rule" aria-hidden="true"></div>
+      <p class="lede">
+        The first message we send into the dark.<br />
+        Click anywhere to answer it.
+      </p>
+    </main>
+
+    <footer class="foot">
+      <p>Earth · origin unknown</p>
+      <p class="foot__hint">Move the pointer. The field listens.</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
